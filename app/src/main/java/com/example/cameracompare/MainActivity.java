@@ -84,6 +84,9 @@ public class MainActivity extends AppCompatActivity {
         mStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                if(!Camera2Helper.checkPermission(MainActivity.this)) {
+                    return;
+                }
                 String[] ids = Camera2Helper.cameraList(MainActivity.this.getBaseContext());
                 if(ids.length == 0) {
                     Toast.makeText(MainActivity.this.getApplicationContext(), "No Camera to start.", Toast.LENGTH_LONG);

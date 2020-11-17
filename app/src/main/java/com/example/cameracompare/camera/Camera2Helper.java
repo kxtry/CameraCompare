@@ -1,7 +1,10 @@
 package com.example.cameracompare.camera;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
@@ -22,6 +25,8 @@ import android.os.HandlerThread;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
+
+import androidx.core.app.ActivityCompat;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -65,6 +70,17 @@ public class Camera2Helper {
     private CameraDevice mCameraDevice;
 
     private Size mPreviewSize;
+
+    public static boolean checkPermission(Activity activity) {
+        if (ActivityCompat.checkSelfPermission(activity.getBaseContext(), Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            return true;
+        }
+        if (!ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA)) {
+            ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.CAMERA}, 0);
+            return false;
+        }
+        return true;
+    }
 
     public static String[] cameraList(Context ctx) {
         CameraManager mgr = (CameraManager) ctx.getSystemService(ctx.CAMERA_SERVICE);
