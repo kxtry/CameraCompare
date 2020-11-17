@@ -1,0 +1,2 @@
+# CameraCompare
+Camera1和Camera2的比较及Camera2的无预览窗口绑定，消除了奇奇怪怪的摄像头差异。
