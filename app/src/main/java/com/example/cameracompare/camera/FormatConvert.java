@@ -2,6 +2,7 @@ package com.example.cameracompare.camera;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.renderscript.Allocation;
 import android.renderscript.Element;
@@ -20,6 +21,12 @@ public class FormatConvert {
     public FormatConvert(Context context) {
         rs = RenderScript.create(context);
         yuvToRgbIntrinsic = ScriptIntrinsicYuvToRGB.create(rs, Element.U8_4(rs));
+    }
+
+    public Bitmap rgbaToBitmap(byte[] rgba, int width, int height) {
+        Bitmap bmpout = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        bmpout.copyPixelsFromBuffer(ByteBuffer.wrap(rgba));
+        return bmpout;
     }
 
     public Bitmap nv21ToBitmap(byte[] nv21, int width, int height){

@@ -3,6 +3,7 @@ package com.example.cameracompare.camera;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.ImageFormat;
+import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -12,6 +13,7 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
+import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
@@ -19,6 +21,7 @@ import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
+import android.provider.ContactsContract;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
@@ -41,7 +44,6 @@ public class Camera2Helper {
 
     public static final String CAMERA_ID_FRONT = "1";
     public static final String CAMERA_ID_BACK = "0";
-    public static final int DEVICE_RESTART = 999;
 
     public static String debugMsg = "";
     public static String outputData="";
@@ -55,6 +57,7 @@ public class Camera2Helper {
     private Context context;
     private CountDownTimer mTimer = new MyCountDownTimer(20 * 1000, 1000);
     private long mFrameCount = 0;
+    private boolean mRgb32Format = false;
     /**
      * A {@link CameraCaptureSession } for camera preview.
      */
@@ -124,6 +127,7 @@ public class Camera2Helper {
         maxPreviewSize = builder.maxPreviewSize;
         minPreviewSize = builder.minPreviewSize;
         context = builder.context;
+        mRgb32Format = builder.rgb32Format;
         debugMsg = "";
         outputData = "";
         resetMsg = "";
@@ -211,7 +215,6 @@ public class Camera2Helper {
         @Override
         public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
             super.onCaptureCompleted(session, request, result);
-            //camera2Listener.onHandleFaces(result);
         }
 
         @Override
@@ -391,9 +394,8 @@ public class Camera2Helper {
         debugMsg += String.format(",PreviewSize:(%d,%d)", mPreviewSize.getWidth(), mPreviewSize.getHeight());
 
         Log.e(TAG, "Camera2.CameraParams:" + debugMsg);
-        mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(), ImageFormat.YUV_420_888, 3);
+        mImageReader = ImageReader.newInstance(mPreviewSize.getWidth(), mPreviewSize.getHeight(), mRgb32Format ? PixelFormat.RGBA_8888 : ImageFormat.YUV_420_888, 2);
         mImageReader.setOnImageAvailableListener(new OnImageAvailableListenerImpl(), mBackgroundHandler);
-        mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
         mCameraId = cameraId;
         return true;
     }
@@ -479,10 +481,10 @@ public class Camera2Helper {
         try {
               // We set up a CaptureRequest.Builder with the output Surface.
             // Here, we create a CameraCaptureSession for camera preview.
+            Surface surface = mImageReader.getSurface();
             mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-            mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-            mPreviewRequestBuilder.addTarget(mImageReader.getSurface());
-            mCameraDevice.createCaptureSession(Arrays.asList(mImageReader.getSurface()),  mCaptureStateCallback, null);
+            mPreviewRequestBuilder.addTarget(surface);
+            mCameraDevice.createCaptureSession(Arrays.asList(surface),  mCaptureStateCallback, null);
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
@@ -518,7 +520,14 @@ public class Camera2Helper {
          */
         private Context context;
 
+        private boolean rgb32Format;
+
         public Builder() {
+        }
+
+        public Builder rgb32Format(boolean on) {
+            rgb32Format = on;
+            return this;
         }
 
         public Builder previewSize(Size val) {
@@ -574,8 +583,26 @@ public class Camera2Helper {
     }
 
     private class OnImageAvailableListenerImpl implements ImageReader.OnImageAvailableListener {
-        private byte[] nv21 = null;
+        private byte[] nv21OrRgba = null;
         private ReentrantLock lock = new ReentrantLock();
+
+        private byte[] ImageToRGBA(Image image) {
+            Image.Plane rgba = image.getPlanes()[0];
+            ByteBuffer buf = rgba.getBuffer();
+            int size = buf.remaining();
+            if(nv21OrRgba == null) {
+                nv21OrRgba = new byte[size];
+            }
+            if(outputData.isEmpty()) {
+                outputData = String.format("ImageFormat:0x%x", image.getFormat());
+                outputData += String.format("Image:(%d,%d), size:%d", image.getWidth(), image.getHeight(), size);
+                outputData += String.format("StridePixel:rgba(%d,%d)", rgba.getRowStride(), rgba.getPixelStride());
+                Log.e(TAG, "Camera2.ImageOutputInfo:" + outputData);
+            }
+            //U and V are swapped
+            buf.get(nv21OrRgba, 0, size);
+            return nv21OrRgba;
+        }
 
         private byte[] YUV_420_888toNV21(Image image) {
             Image.Plane y = image.getPlanes()[0];
@@ -588,8 +615,8 @@ public class Camera2Helper {
             int ySize = yBuffer.remaining();
             int uSize = uBuffer.remaining();
             int vSize = vBuffer.remaining();
-            if(nv21 == null) {
-                nv21 = new byte[ySize + vSize + uSize + vSize + uSize];
+            if(nv21OrRgba == null) {
+                nv21OrRgba = new byte[ySize + vSize + uSize + vSize + uSize];
             }
             if(outputData.isEmpty()) {
                 outputData = String.format("ImageFormat:0x%x", image.getFormat());
@@ -598,7 +625,7 @@ public class Camera2Helper {
                 Log.e(TAG, "Camera2.ImageOutputInfo:" + outputData);
             }
             //U and V are swapped
-            yBuffer.get(nv21, 0, ySize);
+            yBuffer.get(nv21OrRgba, 0, ySize);
             if(v.getPixelStride() == 1) {
                 // 实际NV21的格式是YYYYYYVUVUVU
                 // yPanel: 全是YYYYYYY
@@ -606,43 +633,50 @@ public class Camera2Helper {
                 // vPanel: 全是VVVVVVV
                 int uoffset = ySize + uSize + vSize;
                 int voffset = uoffset + uSize;
-                vBuffer.get(nv21, voffset, vSize);
-                uBuffer.get(nv21, uoffset, uSize);
+                vBuffer.get(nv21OrRgba, voffset, vSize);
+                uBuffer.get(nv21OrRgba, uoffset, uSize);
                 int uvoffset = ySize;
                 for(int i = 0; i < uSize; i++) {
-                    nv21[uvoffset++] = nv21[voffset + i];
-                    nv21[uvoffset++] = nv21[uoffset + i];
+                    nv21OrRgba[uvoffset++] = nv21OrRgba[voffset + i];
+                    nv21OrRgba[uvoffset++] = nv21OrRgba[uoffset + i];
                 }
             }else if(v.getPixelStride() == 2) {
                 // 实际NV21的格式是YYYYYYVUVUVU
                 // yPanel: 全是YYYYYYY
                 // uPanel: 全是UVUVUVUV
                 // vPanel: 全是VUVUVUVU
-                vBuffer.get(nv21, ySize, vSize);
+                vBuffer.get(nv21OrRgba, ySize, vSize);
             }else{
                 // bad format.
                 //uBuffer.get(nv21, ySize, uSize);
                 //vBuffer.get(nv21, ySize + uSize, vSize);
             }
-            return nv21;
+            return nv21OrRgba;
         }
 
         @Override
         public void onImageAvailable(ImageReader reader) {
             lock.lock();
+            Image image = reader.acquireNextImage();
             try {
+                if(image == null) {
+                    return;
+                }
                 mFrameCount++;
-                Image image = reader.acquireNextImage();
-                if(image != null) {
+                int fmt = image.getFormat();
+                if(fmt == ImageFormat.YUV_420_888) {
                     // Y:U:V == 4:2:2
                     byte[] nv21 = YUV_420_888toNV21(image);
-                    camera2Listener.onPreview(nv21, image.getWidth(), image.getHeight(), mCameraDevice);
-                    image.close();
+                    camera2Listener.onPreview(nv21, image.getWidth(), image.getHeight(), false, mCameraDevice);
+                }else if(fmt == PixelFormat.RGBA_8888){
+                    Log.d(TAG, "here..."+mFrameCount);
+                    byte[] rgba = ImageToRGBA(image);
+                    camera2Listener.onPreview(rgba, image.getWidth(), image.getHeight(), true, mCameraDevice);
                 }
             }catch (Exception e){
                 e.printStackTrace();
-            }
-            finally {
+            }finally {
+                image.close();
                 lock.unlock();
             }
         }

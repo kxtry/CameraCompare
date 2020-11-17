@@ -15,10 +15,10 @@ public interface Camera2Listener {
 
     /**
      * 预览数据回调
-     * @param nv21 预览数据
+     * @param nv21OrRgba 预览数据
      * @param camera 相机实例
      */
-    void onPreview(byte[] nv21, int width, int height, CameraDevice camera);
+    void onPreview(byte[] nv21OrRgba, int width, int height, boolean isRgb32, CameraDevice camera);
 
     /**
      * 当相机关闭时执行

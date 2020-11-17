@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
     private Camera2Helper camera2;
     private int cameraId = 0;
     private int rotateAngle = 0;
-    private boolean flip = false;
+    private boolean flip = true;
     private Camera1Listener listener1;
     private Camera2Listener listener2;
     private FormatConvert mConvert1;
@@ -93,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
                     camera1.start();
                 }else{
                     camera2 = new Camera2Helper.Builder()
+                            .rgb32Format(true)
                             .specificCameraId(String.valueOf(cameraId))
                             .context(MainActivity.this.getBaseContext())
                             .maxPreviewSize(new Size(800, 600))
@@ -171,11 +172,11 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onPreview(byte[] nv21, int width, int height, CameraDevice camera) {
+            public void onPreview(byte[] data, int width, int height, boolean isRgb32, CameraDevice camera) {
                 Log.d(TAG, String.format("camera2 width:%d - height:%d", width, height));
-                Bitmap bmp = mConvert1.nv21ToBitmap(nv21, width, height);
-                Bitmap front = mConvert1.rotateBitmap(bmp, rotateAngle, flip);
-                ByteBuffer buf = mConvert1.bitmapBuffer(front);
+                Bitmap bmp = isRgb32 ? mConvert2.rgbaToBitmap(data, width, height) : mConvert2.nv21ToBitmap(data, width, height);
+                Bitmap front = mConvert2.rotateBitmap(bmp, rotateAngle, flip);
+                ByteBuffer buf = mConvert2.bitmapBuffer(front);
                 mPreview2.paint(buf.duplicate(), front.getWidth(), front.getHeight(), true);
                 mReplay.paint(buf, front.getWidth(), front.getHeight(), true);
                 mFrameCount++;
