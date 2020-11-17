@@ -145,7 +145,7 @@ public class GLGraphics {
     }
 
     @SuppressLint("NewApi")
-    public void buildTextures(Buffer rgbBuffer, int width, int height) {
+    public void buildTextures(Buffer rgbBuffer, int width, int height, boolean rgb32) {
         boolean videoSizeChanged = (width != mGraphWidth || height != mGraphHeight);
         if (videoSizeChanged) {
             mGraphWidth = width;
@@ -164,9 +164,9 @@ public class GLGraphics {
         }
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, ytid);
         ShaderUtil.checkGlError("glBindTexture");
-
-        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGB, mGraphWidth,
-                mGraphHeight, 0, GLES20.GL_RGB, GLES20.GL_UNSIGNED_BYTE,
+        int glrgb = rgb32 ? GLES20.GL_RGBA : GLES20.GL_RGB;
+        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, glrgb, mGraphWidth,
+                mGraphHeight, 0, glrgb, GLES20.GL_UNSIGNED_BYTE,
                 rgbBuffer);
         ShaderUtil.checkGlError("glTexImage2D");
         GLES20.glTexParameterf(GLES20.GL_TEXTURE_2D,

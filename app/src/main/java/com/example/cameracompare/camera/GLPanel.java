@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+import android.security.keystore.StrongBoxUnavailableException;
 import android.util.AttributeSet;
 
 import java.nio.ByteBuffer;
@@ -21,6 +22,7 @@ public class GLPanel extends GLSurfaceView
     private boolean bWork = true;
     private int mFrameWidth;
     private int mFrameHeight;
+    private boolean mRgb = false;
 
 	@SuppressLint("NewApi")
     public GLPanel(Context context) {
@@ -39,13 +41,13 @@ public class GLPanel extends GLSurfaceView
         setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
     }
 
-    public void paint(float[] vertices, ByteBuffer buffer, int width, int height){
+    public void paint(ByteBuffer buffer, int width, int height, boolean rgb32){
 		if(mGLGraphics == null){
 			return;
 		}
         mFrameWidth = width;
         mFrameHeight = height;
-		mGLGraphics.setVertexData(vertices);
+        mRgb = rgb32;
         mBufferImage.set(buffer);
         if(bWork){
             requestRender();
@@ -71,7 +73,7 @@ public class GLPanel extends GLSurfaceView
             ByteBuffer tmp = mBufferImage.get();
             if (tmp != null) {
                 tmp.position(0);
-                mGLGraphics.buildTextures(tmp, mFrameWidth, mFrameHeight);
+                mGLGraphics.buildTextures(tmp, mFrameWidth, mFrameHeight, mRgb);
             }
             mGLGraphics.draw();
         }
@@ -85,6 +87,7 @@ public class GLPanel extends GLSurfaceView
             mGLGraphics = new GLGraphics();
             if (!mGLGraphics.isProgramBuilt()) {
                 mGLGraphics.buildProgram();
+                mGLGraphics.setVertexData(null);
             }
             GLES20.glEnable(GLES20.GL_DEPTH_TEST);
             GLES20.glEnable(GLES20.GL_CULL_FACE);
