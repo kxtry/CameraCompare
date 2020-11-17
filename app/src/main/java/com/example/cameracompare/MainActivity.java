@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private Button mStart;
     private Button mStop;
     private RadioButton mChecker;
+    private RadioButton mRgba;
     private RadioGroup mGroup;
     private Camera1Helper camera1;
     private Camera2Helper camera2;
@@ -70,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
         mInfo = (TextView) findViewById(R.id.info);
         mPreview1.setVisibility(mChecker.isChecked() ? View.VISIBLE : View.GONE);
         mPreview2.setVisibility(mChecker.isChecked() ? View.GONE : View.VISIBLE);
+        mRgba =(RadioButton)findViewById(R.id.rgba);
         mGroup = (RadioGroup)findViewById(R.id.camera);
         mGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
@@ -78,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
                 mPreview2.setVisibility(mChecker.isChecked() ? View.GONE : View.VISIBLE);
             }
         });
+
         mStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -99,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
                     camera1.start();
                 }else{
                     camera2 = new Camera2Helper.Builder()
-                            .rgb32Format(true)
+                            .rgb32Format(mRgba.isChecked())
                             .specificCameraId(String.valueOf(cameraId))
                             .context(MainActivity.this.getBaseContext())
                             .maxPreviewSize(new Size(800, 600))
