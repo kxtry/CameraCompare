@@ -9,6 +9,7 @@ import android.hardware.Camera;
 import android.hardware.camera2.CameraDevice;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.util.Log;
 import android.util.Size;
 import android.view.TextureView;
@@ -16,6 +17,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.TextView;
 
 import com.example.cameracompare.camera.Camera1Helper;
 import com.example.cameracompare.camera.Camera1Listener;
@@ -45,6 +47,11 @@ public class MainActivity extends AppCompatActivity {
     private Camera2Listener listener2;
     private FormatConvert mConvert1;
     private FormatConvert mConvert2;
+    private CountDownTimer mTimer;
+    private TextView mInfo;
+    private long mFrameCount = 0;
+    private int mPreviewWidth = 0;
+    private int mPreviewHeight = 0;
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
@@ -59,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
         mPreview2 = (GLPanel) findViewById(R.id.preview2);
         mReplay = (GLPanel)findViewById(R.id.replay);
         mChecker = (RadioButton)findViewById(R.id.camera1);
+        mInfo = (TextView) findViewById(R.id.info);
         mPreview1.setVisibility(mChecker.isChecked() ? View.VISIBLE : View.GONE);
         mPreview2.setVisibility(mChecker.isChecked() ? View.GONE : View.VISIBLE);
         mGroup = (RadioGroup)findViewById(R.id.camera);
@@ -95,6 +103,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 mStart.setEnabled(false);
                 mStop.setEnabled(true);
+                mTimer.start();
             }
         });
         mStop.setOnClickListener(new View.OnClickListener() {
@@ -108,6 +117,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 mStart.setEnabled(true);
                 mStop.setEnabled(false);
+                mTimer.cancel();
                 camera1 = null;
                 camera2 = null;
             }
@@ -126,7 +136,10 @@ public class MainActivity extends AppCompatActivity {
                 Bitmap bmp = mConvert1.nv21ToBitmap(data, sz.width, sz.height);
                 Bitmap front = mConvert1.rotateBitmap(bmp, rotateAngle, flip);
                 ByteBuffer buf = mConvert1.bitmapBuffer(front);
+                mPreviewWidth = front.getWidth();
+                mPreviewHeight = front.getHeight();
                 mReplay.paint(buf, front.getWidth(), front.getHeight(), true);
+                mFrameCount++;
             }
 
             @Override
@@ -148,7 +161,13 @@ public class MainActivity extends AppCompatActivity {
         listener2 = new Camera2Listener() {
             @Override
             public void onCameraOpened(CameraDevice camera, String cameraId, int width, int height) {
-
+                int rotate = rotateAngle / 90 * 90;
+                mPreviewWidth = width;
+                mPreviewHeight = height;
+                if(rotate == 90 || rotate == 270) {
+                    mPreviewWidth = height;
+                    mPreviewHeight = width;
+                }
             }
 
             @Override
@@ -157,7 +176,9 @@ public class MainActivity extends AppCompatActivity {
                 Bitmap bmp = mConvert1.nv21ToBitmap(nv21, width, height);
                 Bitmap front = mConvert1.rotateBitmap(bmp, rotateAngle, flip);
                 ByteBuffer buf = mConvert1.bitmapBuffer(front);
+                mPreview2.paint(buf.duplicate(), front.getWidth(), front.getHeight(), true);
                 mReplay.paint(buf, front.getWidth(), front.getHeight(), true);
+                mFrameCount++;
             }
 
             @Override
@@ -168,6 +189,23 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onCameraError(Exception e) {
                 Log.i(TAG, "onCameraError: " + e.getMessage());
+            }
+        };
+
+        mTimer = new CountDownTimer(10*1000, 1000) {
+            private long frameLast;
+            @Override
+            public void onTick(long l) {
+                long qps = mFrameCount - frameLast;
+                frameLast = mFrameCount;
+                String msg = String.format("CameraInfo: QPS:%d - width:%d - height:%d", qps, mPreviewWidth, mPreviewHeight);
+                Log.d(TAG, msg);
+                mInfo.setText(msg);
+            }
+
+            @Override
+            public void onFinish() {
+                start();
             }
         };
 
