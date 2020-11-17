@@ -18,6 +18,7 @@ import android.widget.Button;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.cameracompare.camera.Camera1Helper;
 import com.example.cameracompare.camera.Camera1Listener;
@@ -80,6 +81,11 @@ public class MainActivity extends AppCompatActivity {
         mStart.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                String[] ids = Camera2Helper.cameraList(MainActivity.this.getBaseContext());
+                if(ids.length == 0) {
+                    Toast.makeText(MainActivity.this.getApplicationContext(), "No Camera to start.", Toast.LENGTH_LONG);
+                    return;
+                }
                 if(mChecker.isChecked()) {
                     camera1 = new Camera1Helper.Builder()
                             .previewViewSize(new Point(640,480))

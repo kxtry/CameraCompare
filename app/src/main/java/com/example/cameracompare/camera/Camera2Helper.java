@@ -13,19 +13,15 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
-import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.Message;
-import android.provider.ContactsContract;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
-import android.view.TextureView;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -69,6 +65,17 @@ public class Camera2Helper {
     private CameraDevice mCameraDevice;
 
     private Size mPreviewSize;
+
+    public static String[] cameraList(Context ctx) {
+        CameraManager mgr = (CameraManager) ctx.getSystemService(ctx.CAMERA_SERVICE);
+        String[] ids = new String[0];
+        try {
+            ids = mgr.getCameraIdList();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return ids;
+    }
 
     class MyCountDownTimer extends CountDownTimer{
         private int resetCount = 0;
@@ -402,7 +409,7 @@ public class Camera2Helper {
 
     @SuppressLint("MissingPermission")
     private void openCamera() {
-        CameraManager cameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+        CameraManager cameraManager = (CameraManager) context.getSystemService(context.CAMERA_SERVICE);
         setUpCameraOutputs(cameraManager);
         try {
             if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
