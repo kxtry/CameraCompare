@@ -196,7 +196,7 @@ public class Camera1Helper implements Camera.PreviewCallback {
         }
     }
 
-    private Camera.Size getBestSupportedSize(List<Camera.Size> sizes, Point previewViewSize) {
+    private Camera.Size getBestSupportedSize2(List<Camera.Size> sizes, Point previewViewSize) {
         if (sizes == null || sizes.size() == 0) {
             return mCamera.getParameters().getPreviewSize();
         }
@@ -221,7 +221,7 @@ public class Camera1Helper implements Camera.PreviewCallback {
         return sizes.get(0);
     }
 
-    private Camera.Size getBestSupportedSize2(List<Camera.Size> sizes, Point previewViewSize) {
+    private Camera.Size getBestSupportedSize(List<Camera.Size> sizes, Point previewViewSize) {
         if (sizes == null || sizes.size() == 0) {
             return mCamera.getParameters().getPreviewSize();
         }

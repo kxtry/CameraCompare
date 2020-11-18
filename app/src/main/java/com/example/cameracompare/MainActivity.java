@@ -131,8 +131,8 @@ public class MainActivity extends AppCompatActivity {
                 cameraId = Integer.parseInt(vid);
                 if(mChecker.isChecked()) {
                     camera1 = new Camera1Helper.Builder()
-                            .previewSize(new Point(640, 480))
-                            .previewViewSize(new Point(640,480))
+                            .previewSize(new Point(1920, 1080))
+                            .previewViewSize(new Point(1920,1080))
                             .rotation(rotateAngle)
                             .specificCameraId(cameraId)
                             .isMirror(false)
@@ -146,8 +146,8 @@ public class MainActivity extends AppCompatActivity {
                             .rgb32Format(mRgba.isChecked())
                             .specificCameraId(String.valueOf(cameraId))
                             .context(MainActivity.this.getBaseContext())
-                            .maxPreviewSize(new Size(640, 480))
-                            .previewSize(new Size(640, 480))
+                            .maxPreviewSize(new Size(1920, 1080))
+                            .previewSize(new Size(1920, 1080))
                             .cameraListener(listener2)
                             .build();
                     camera2.start();
