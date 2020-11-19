@@ -249,7 +249,7 @@ public class MainActivity extends AppCompatActivity {
             public void onTick(long l) {
                 long qps = mFrameCount - frameLast;
                 frameLast = mFrameCount;
-                String msg = String.format("camera2.Id:%d - QPS:%d - rotate:%d - flip:%d - width:%d - height:%d", cameraId, qps, rotateAngle, flip ? 1 : 0, mPreviewWidth, mPreviewHeight);
+                String msg = String.format("camera.Id:%d - QPS:%d - rotate:%d - flip:%d - width:%d - height:%d", cameraId, qps, rotateAngle, flip ? 1 : 0, mPreviewWidth, mPreviewHeight);
                 Log.d(TAG, msg);
                 mInfo.setText(msg);
             }
